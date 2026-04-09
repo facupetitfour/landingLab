@@ -7,7 +7,8 @@ datasource db {
 }
 
 model Profile {
-  id                 String    @id
+  id                 String    @id @default(cuid())
+  clerkUserId        String    @unique @map("clerk_user_id")
   email              String    @unique
   fullName           String?   @map("full_name")
   avatarUrl          String?   @map("avatar_url")

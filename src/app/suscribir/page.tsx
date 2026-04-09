@@ -8,7 +8,7 @@ export default function SuscribirPage() {
   const router = useRouter();
   const { isLoaded, user } = useUser();
   const [loading, setLoading] = useState(false);
-  const [isNewUser, setIsNewUser] = useState<boolean>(true);
+  const [isNewUser, setIsNewUser] = useState<boolean>(false);
 
   useEffect(() => {
     if (user && user.createdAt) {
@@ -16,6 +16,7 @@ export default function SuscribirPage() {
       const now = Date.now();
       const differenceInHours = (now - createdTime) / (1000 * 60 * 60);
       setIsNewUser(differenceInHours < 24);
+
     }
   }, [user]);
 
@@ -90,25 +91,15 @@ export default function SuscribirPage() {
             maxWidth: '540px',
             width: '100%',
             textAlign: 'center',
-            padding: '48px 40px',
-            background: 'linear-gradient(180deg, var(--bg-surface) 0%, rgba(var(--primary-rgb), 0.05) 100%)',
-            border: '2px solid var(--primary)',
-            boxShadow: '0 20px 40px rgba(var(--primary-rgb), 0.15)',
+            padding: '20px 30px',
             borderRadius: '24px',
             position: 'relative',
             overflow: 'hidden'
           }}>
-            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '150px', height: '150px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.2, borderRadius: '50%' }}></div>
-            <div style={{ position: 'absolute', bottom: '-50px', right: '-50px', width: '150px', height: '150px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.2, borderRadius: '50%' }}></div>
 
             <div style={{
               fontSize: '56px',
-              marginBottom: '20px',
-              display: 'inline-flex',
-              padding: '20px',
-              background: 'rgba(var(--primary-rgb), 0.1)',
-              borderRadius: '50%',
-              boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.2) inset'
+              padding: '10px',
             }}>✨</div>
 
             <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '12px', letterSpacing: '-0.5px' }}>
@@ -212,7 +203,7 @@ export default function SuscribirPage() {
             }}>
               <span style={{ fontSize: '24px' }}>💼</span>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: 600, fontSize: '16px' }}>Plan Pro Mensual</div>
+                <div style={{ fontWeight: 600, fontSize: '16px' }}>Renueva tu suscripción</div>
                 <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Acceso total a las herramientas IA</div>
               </div>
             </div>

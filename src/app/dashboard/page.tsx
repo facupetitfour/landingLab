@@ -1,63 +1,51 @@
+// app/dashboard/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useClerk, UserButton } from '@clerk/nextjs';
 import { useProjectStore } from '@/store/project-store';
 import { STATUS_LABELS, type ProjectStatus } from '@/types/chat';
+
+// Importamos las Server Actions
+import { getDashboardData, createProjectAction, deleteProjectAction } from '@/app/actions/projects';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
   const { projects, setProjects, loadingProjects, setLoadingProjects } = useProjectStore();
+
   const [creatingProject, setCreatingProject] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (isLoaded && user) {
-      loadProjects();
-      loadCredits();
-    }
-  }, [isLoaded, user]);
-
-  const loadCredits = async () => {
-    try {
-      const res = await fetch('/api/credits');
-      const data = await res.json();
-      if (typeof data.credits === 'number') {
-        setCredits(data.credits);
-      }
-    } catch (err) {
-      console.error('Error loading credits:', err);
-    }
-  };
-
-  const loadProjects = async () => {
+  // Consolidamos la carga de datos en una sola función
+  const loadData = useCallback(async () => {
     setLoadingProjects(true);
     try {
-      const res = await fetch('/api/projects');
-      const data = await res.json();
-      setProjects(data.projects || []);
+      const data = await getDashboardData();
+      setProjects(data.projects);
+      setCredits(data.credits);
     } catch (err) {
-      console.error('Error loading projects:', err);
+      console.error('Error loading dashboard data:', err);
     } finally {
       setLoadingProjects(false);
     }
-  };
+  }, [setProjects, setLoadingProjects]);
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      loadData();
+    }
+  }, [isLoaded, user, loadData]);
 
   const createProject = async () => {
     if (!user || creatingProject) return;
     setCreatingProject(true);
     try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (data.project) {
-        router.push(`/project/${data.project.id}`);
+      const newProject = await createProjectAction();
+      if (newProject) {
+        router.push(`/project/${newProject.id}`);
       }
     } catch (err) {
       console.error('Error creating project:', err);
@@ -69,15 +57,17 @@ export default function DashboardPage() {
   const deleteProject = async (projectId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('¿Eliminar este proyecto?')) return;
+
+    // UI Optimista: Eliminamos del estado visualmente al instante
+    const previousProjects = [...projects];
+    setProjects(projects.filter((p) => p.id !== projectId));
+
     try {
-      await fetch('/api/projects', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_id: projectId }),
-      });
-      setProjects(projects.filter((p) => p.id !== projectId));
+      await deleteProjectAction(projectId);
     } catch (err) {
       console.error('Error deleting project:', err);
+      setProjects(previousProjects); // Si falla, revertimos
+      alert('Error al eliminar el proyecto');
     }
   };
 
@@ -95,8 +85,8 @@ export default function DashboardPage() {
     );
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-ES', {
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('es-ES', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
