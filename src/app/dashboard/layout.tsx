@@ -1,5 +1,5 @@
+import { createProfileFunction, existingProfileFunction } from '@/lib/user/user_lib';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -14,9 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Fallback Sync: For local development sin webhooks o usuarios existentes
   // Verificamos si el perfil existe, sino, lo creamos.
   try {
-    let existingProfile = await prisma.profile.findUnique({
-      where: { id: userId }
-    });
+    let existingProfile = await existingProfileFunction(userId);
 
     if (!existingProfile) {
       const user = await currentUser();
@@ -25,19 +23,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
         const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
         const avatarUrl = user.imageUrl || null;
 
-        existingProfile = await prisma.profile.create({
-          data: {
-            id: userId,
-            email,
-            fullName: fullName || email.split('@')[0],
-            avatarUrl,
-          }
-        });
+        existingProfile = await createProfileFunction(userId, email, fullName, avatarUrl)
       }
     }
-    
+
     if (existingProfile) {
-        isSubscribed = existingProfile.isSubscribed;
+      isSubscribed = existingProfile.isSubscribed;
     }
   } catch (error) {
     console.error('[Dashboard Layout] Error verificando perfil de usuario:', error);

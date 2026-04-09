@@ -63,7 +63,7 @@ export default function SuscribirPage() {
 
   return (
     <div className="app-shell" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-main)' }}>
-      <header className="app-header" style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)' }}>
+      <header className="app-header" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="app-header-logo" style={{ fontSize: '1.25rem', fontWeight: 700, gap: '8px', display: 'flex', alignItems: 'center' }}>
           <span style={{ fontSize: '1.5rem' }}>🚀</span> Landing<span style={{ color: 'var(--primary)' }}>Lab</span>
         </div>
@@ -92,8 +92,8 @@ export default function SuscribirPage() {
             textAlign: 'center',
             padding: '48px 40px',
             background: 'linear-gradient(180deg, var(--bg-surface) 0%, rgba(var(--primary-rgb), 0.05) 100%)',
-            border: '1px solid rgba(var(--primary-rgb), 0.2)',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+            border: '2px solid var(--primary)',
+            boxShadow: '0 20px 40px rgba(var(--primary-rgb), 0.15)',
             borderRadius: '24px',
             position: 'relative',
             overflow: 'hidden'
@@ -179,8 +179,9 @@ export default function SuscribirPage() {
             width: '100%',
             textAlign: 'center',
             padding: '40px 32px',
-            borderTop: '4px solid var(--primary)',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
+            border: '2px solid var(--primary)',
+            boxShadow: '0 10px 40px rgba(var(--primary-rgb), 0.15)',
+            borderRadius: '24px'
           }}>
             <div style={{
               fontSize: '48px',
