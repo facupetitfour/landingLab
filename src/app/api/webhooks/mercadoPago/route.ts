@@ -23,7 +23,7 @@ export async function POST(request: Request) {
             if (userId) {
                 if (subscriptionInfo.status === 'authorized') {
                     await prisma.profile.update({
-                        where: { id: userId },
+                        where: { clerkUserId: userId },
                         data: {
                             isSubscribed: true,
                             subscriptionStatus: subscriptionInfo.status,
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
                     console.log(`Suscripción de usuario ${userId} autorizada. Créditos recargados a 3000.`);
                 } else if (subscriptionInfo.status === 'cancelled') {
                     await prisma.profile.update({
-                        where: { id: userId },
+                        where: { clerkUserId: userId },
                         data: {
                             isSubscribed: false,
                             subscriptionStatus: subscriptionInfo.status,
@@ -49,23 +49,30 @@ export async function POST(request: Request) {
             const userId = paymentInfo.external_reference;
 
             if (userId) {
-                // 1. Guardar o actualizar registro histórico en la tabla Payment
-                await prisma.payment.upsert({
-                    where: { mpId: String(dataId) },
-                    create: {
-                        mpId: String(dataId),
-                        userId: userId,
-                        status: paymentInfo.status || 'unknown'
-                    },
-                    update: {
-                        status: paymentInfo.status || 'unknown'
-                    }
+                const profile = await prisma.profile.findUnique({
+                    where: { clerkUserId: userId },
+                    select: { id: true }
                 });
+
+                if (profile) {
+                    // 1. Guardar o actualizar registro histórico en la tabla Payment
+                    await prisma.payment.upsert({
+                        where: { mpId: String(dataId) },
+                        create: {
+                            mpId: String(dataId),
+                            userId: profile.id,
+                            status: paymentInfo.status || 'unknown'
+                        },
+                        update: {
+                            status: paymentInfo.status || 'unknown'
+                        }
+                    });
+                }
 
                 // 2. Si el pago está aprobado, recargar los créditos
                 if (paymentInfo.status === 'approved') {
                     await prisma.profile.update({
-                        where: { id: userId },
+                        where: { clerkUserId: userId },
                         data: {
                             isSubscribed: true, // Por seguridad
                             credits: 3000 // Recarga en cada pago aprobado

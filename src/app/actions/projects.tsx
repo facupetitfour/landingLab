@@ -28,9 +28,16 @@ export async function getDashboardData() {
         }
     });
 
+    const formattedProjects = projects.map((p) => ({
+        ...p,
+        status: p.status as any,
+        created_at: p.createdAt ? p.createdAt.toISOString() : new Date().toISOString(),
+        updated_at: p.updatedAt ? p.updatedAt.toISOString() : new Date().toISOString()
+    }));
+
     return {
         credits: profile.credits,
-        projects: projects || [],
+        projects: formattedProjects,
     };
 }
 
@@ -43,7 +50,7 @@ export async function createProjectAction() {
         data: {
             profile: { connect: { clerkUserId: userId } },
             name: 'Nueva Landing Page',
-            status: 'draft',
+            status: 'welcome',
         },
     });
 

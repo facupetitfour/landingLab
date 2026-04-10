@@ -58,14 +58,14 @@ export async function POST(req: Request) {
 
     try {
       await prisma.profile.upsert({
-        where: { id: id as string },
+        where: { clerkUserId: id as string },
         update: {
           email,
           fullName,
           avatarUrl: image_url || null,
         },
         create: {
-          id: id as string,
+          clerkUserId: id as string,
           email,
           fullName,
           avatarUrl: image_url || null,
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     const { id } = evt.data
     try {
       await prisma.profile.delete({
-        where: { id: id as string },
+        where: { clerkUserId: id as string },
       })
       // console.log(`User ${id} was deleted in Prisma`)
     } catch (error) {
