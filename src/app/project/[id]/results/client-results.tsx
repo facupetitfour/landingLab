@@ -6,7 +6,7 @@ import { useProjectStore } from '@/store/project-store';
 import { ARCHETYPE_LABELS, SKELETON_LABELS, type MarketArchetype, type SkeletonType } from '@/types/strategy';
 import { COPY_SECTION_LABELS, type CopyData } from '@/types/copy';
 import type { LandingCopy } from '@/types/landing';
-import type { StrategyData } from '@/types/strategy';
+import { StrategyData, EMPTY_STRATEGY } from '@/types/strategy';
 import type { ChatMessage } from '@/types/chat';
 import { editCopyAction, updateDesignAction } from '@/app/actions/project-actions';
 
@@ -27,6 +27,7 @@ export default function ClientResults({ projectId, initialData }: ClientResultsP
   const router = useRouter();
 
   const {
+    currentProjectId,
     activeTab, setActiveTab,
     messages, setMessages,
     strategyData, setStrategyData,
@@ -51,15 +52,26 @@ export default function ClientResults({ projectId, initialData }: ClientResultsP
     setCurrentProject(projectId);
     setMessages(initialData.messages || []);
     setStatus(initialData.status);
-    setArchetype(initialData.archetype);
+    setArchetype(initialData.archetype || null);
 
-    if (initialData.strategy) setStrategyData(initialData.strategy as StrategyData);
+    if (initialData.strategy) {
+      setStrategyData(initialData.strategy as StrategyData);
+    } else {
+      setStrategyData({ ...EMPTY_STRATEGY });
+    }
+
     if (initialData.output) {
       setCopyData(initialData.output.copy_data as CopyData);
       setEditedCopy(JSON.parse(JSON.stringify(initialData.output.copy_data)) as LandingCopy);
       setHtmlContent(initialData.output.html_content);
       setActiveVersion(initialData.output.version);
+    } else {
+      setCopyData(null);
+      setEditedCopy(null);
+      setHtmlContent(null);
+      setActiveVersion(0);
     }
+
     setInitializedId(projectId);
   }, [projectId, initialData, initializedId, setCurrentProject, setMessages, setStatus, setArchetype, setStrategyData, setCopyData, setHtmlContent, setActiveVersion]);
 
@@ -83,7 +95,7 @@ export default function ClientResults({ projectId, initialData }: ClientResultsP
     setHtmlContent(data.html_content);
     setActiveVersion(data.version);
     // Optional: Refresh initialData via router refresh to get new messages from DB
-    router.refresh(); 
+    router.refresh();
   }
 
   const handleQuickEdit = async (key: string) => {
@@ -149,11 +161,25 @@ export default function ClientResults({ projectId, initialData }: ClientResultsP
       .replace(/\n/g, '<br/>');
   };
 
+  if (currentProjectId !== projectId) {
+    return (
+      <div className="app-shell">
+        <header className="app-header">
+          <div className="app-header-logo">🚀 Landing<span>Lab</span></div>
+        </header>
+        <div className="generating-overlay" style={{ flex: 1 }}>
+          <div className="generating-spinner"></div>
+          <p style={{ marginTop: '16px' }}>Cargando proyecto...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => router.push('/dashboard')}>
+          <button className="btn btn-ghost btn-sm" onClick={() => { useProjectStore.getState().resetProject(); router.push('/dashboard'); }}>
             ← Proyectos
           </button>
           <div className="app-header-logo">🚀 Landing<span>Lab</span></div>
@@ -179,13 +205,13 @@ export default function ClientResults({ projectId, initialData }: ClientResultsP
           </div>
 
           {/* Quick Edit Chips */}
-          <div className="quick-edit-bar">
+          {/* <div className="quick-edit-bar">
             <button className="chip" onClick={() => handleQuickEdit('mas_corto')} disabled={isEditing}>✂️ Más corto</button>
             <button className="chip" onClick={() => handleQuickEdit('mas_vendedor')} disabled={isEditing}>🔥 Más vendedor</button>
             <button className="chip" onClick={() => handleQuickEdit('mas_premium')} disabled={isEditing}>💎 Más premium</button>
             <button className="chip" onClick={() => handleQuickEdit('cambiar_cta')} disabled={isEditing}>🎯 Cambiar CTA</button>
             <button className="chip" onClick={() => handleQuickEdit('mejorar_hero')} disabled={isEditing}>⚡ Mejorar hero</button>
-          </div>
+          </div> */}
 
           {/* Free Edit Input */}
           <div className="chat-input-area" style={{ background: 'var(--bg-secondary)' }}>
@@ -209,10 +235,10 @@ export default function ClientResults({ projectId, initialData }: ClientResultsP
         <div className="results-output-panel">
           <div className="results-tabs-header">
             <div className="tabs">
-              <button className={`tab ${activeTab === 'strategy' ? 'active' : ''}`} onClick={() => setActiveTab('strategy')}>📊 Estrategia</button>
-              <button className={`tab ${activeTab === 'copy' ? 'active' : ''}`} onClick={() => setActiveTab('copy')}>✍️ Copy</button>
               <button className={`tab ${activeTab === 'html' ? 'active' : ''}`} onClick={() => setActiveTab('html')}>🧱 HTML</button>
               <button className={`tab ${activeTab === 'design' ? 'active' : ''}`} onClick={() => setActiveTab('design')}>🎨 Diseño</button>
+              <button className={`tab ${activeTab === 'strategy' ? 'active' : ''}`} onClick={() => setActiveTab('strategy')}>📊 Estrategia</button>
+              <button className={`tab ${activeTab === 'copy' ? 'active' : ''}`} onClick={() => setActiveTab('copy')}>✍️ Copy</button>
             </div>
 
             {activeTab === 'html' && htmlContent && (

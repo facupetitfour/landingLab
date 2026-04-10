@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjectStore } from '@/store/project-store';
 import { QUESTION_SEQUENCE } from '@/types/chat';
+import { EMPTY_BRIEF } from '@/types/brief';
 import type { ChatMessage } from '@/types/chat';
 import { sendMessageAction, getProjectStateAction } from '@/app/actions/project-actions';
 
@@ -16,6 +17,7 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
   const router = useRouter();
 
   const {
+    currentProjectId,
     messages, setMessages, addMessage,
     status, setStatus,
     setBriefData,
@@ -49,7 +51,12 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
         setMessages([]);
       }
       setStatus(initialData.status as any);
-      if (initialData.brief) setBriefData(initialData.brief);
+      
+      if (initialData.brief) {
+        setBriefData(initialData.brief);
+      } else {
+        setBriefData({ ...EMPTY_BRIEF });
+      }
 
       // If project is completed/editing redirect to results
       if (initialData.status === 'completed' || initialData.status === 'editing') {
@@ -198,11 +205,25 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
       .replace(/\n/g, '<br/>');
   };
 
+  if (currentProjectId !== projectId) {
+    return (
+      <div className="app-shell">
+        <header className="app-header">
+          <div className="app-header-logo">🚀 Landing<span>Lab</span></div>
+        </header>
+        <div className="generating-overlay" style={{ flex: 1 }}>
+          <div className="generating-spinner"></div>
+          <p style={{ marginTop: '16px' }}>Cargando proyecto...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => router.push('/dashboard')}>
+          <button className="btn btn-ghost btn-sm" onClick={() => { useProjectStore.getState().resetProject(); router.push('/dashboard'); }}>
             ← Proyectos
           </button>
           <div className="app-header-logo">

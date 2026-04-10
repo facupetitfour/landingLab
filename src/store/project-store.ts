@@ -30,7 +30,7 @@ interface ProjectStore {
   isGenerating: boolean;
 
   // Tab state
-  activeTab: 'strategy' | 'copy' | 'html' | 'design';
+  activeTab: 'html' | 'design' | 'strategy' | 'copy';
 
   // Actions
   setCurrentProject: (id: string | null) => void;
@@ -45,7 +45,7 @@ interface ProjectStore {
   addMessage: (message: ChatMessage) => void;
   setIsSending: (sending: boolean) => void;
   setIsGenerating: (generating: boolean) => void;
-  setActiveTab: (tab: 'strategy' | 'copy' | 'html' | 'design') => void;
+  setActiveTab: (tab: 'html' | 'design' | 'strategy' | 'copy') => void;
   resetProject: () => void;
 }
 
@@ -102,6 +102,6 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       messages: [],
       isSending: false,
       isGenerating: false,
-      activeTab: 'strategy',
+      activeTab: 'html',
     }),
 }));

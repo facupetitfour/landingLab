@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
-  const { projects, setProjects, loadingProjects, setLoadingProjects } = useProjectStore();
+  const { projects, setProjects, loadingProjects, setLoadingProjects, resetProject } = useProjectStore();
 
   const [creatingProject, setCreatingProject] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
@@ -185,6 +185,7 @@ export default function DashboardPage() {
                   key={project.id}
                   className="card project-card"
                   onClick={() => {
+                    resetProject();
                     const targetStatus = project.status;
                     if (targetStatus === 'completed' || targetStatus === 'editing') {
                       router.push(`/project/${project.id}/results`);
