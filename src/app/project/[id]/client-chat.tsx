@@ -40,6 +40,15 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
     scrollToBottom();
   }, [messages, isSending]);
 
+  // Keep focus on input after sending
+  useEffect(() => {
+    if (!isSending && !isGenerating && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 1);
+    }
+  }, [isSending, isGenerating]);
+
   // Initialize
   useEffect(() => {
     const init = async () => {
@@ -51,7 +60,7 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
         setMessages([]);
       }
       setStatus(initialData.status as any);
-      
+
       if (initialData.brief) {
         setBriefData(initialData.brief);
       } else {
@@ -104,11 +113,14 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
     if (initializedId !== projectId) {
       init();
     }
+  }, [projectId, initialData, initializedId, setCurrentProject, setMessages, setStatus, setBriefData, setIsGenerating, router]);
 
+  // Cleanup polling on unmount ONLY
+  useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [projectId, initialData, initializedId, setCurrentProject, setMessages, setStatus, setBriefData, setIsGenerating, router]);
+  }, []);
 
   const startPolling = useCallback(() => {
     if (pollingRef.current) clearInterval(pollingRef.current);
@@ -290,6 +302,7 @@ export default function ClientChat({ projectId, initialData }: ClientChatProps) 
                 onKeyDown={handleKeyDown}
                 disabled={isSending}
                 rows={1}
+                autoFocus
               />
               <button
                 className="btn btn-primary"
