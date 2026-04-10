@@ -14,7 +14,7 @@ export const CREDIT_COSTS = {
  */
 export async function consumeCredits(userId: string, amount: number): Promise<boolean> {
   const profile = await prisma.profile.findUnique({
-    where: { id: userId },
+    where: { clerkUserId: userId },
     select: { credits: true },
   });
 
@@ -24,7 +24,7 @@ export async function consumeCredits(userId: string, amount: number): Promise<bo
 
   try {
     await prisma.profile.update({
-      where: { id: userId },
+      where: { clerkUserId: userId },
       data: {
         credits: {
           decrement: amount,
@@ -43,7 +43,7 @@ export async function consumeCredits(userId: string, amount: number): Promise<bo
  */
 export async function getCredits(userId: string): Promise<number> {
   const profile = await prisma.profile.findUnique({
-    where: { id: userId },
+    where: { clerkUserId: userId },
     select: { credits: true },
   });
 

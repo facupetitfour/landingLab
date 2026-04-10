@@ -117,9 +117,7 @@ export const QUESTION_SEQUENCE: QuestionConfig[] = [
 
 export const WELCOME_MESSAGE = `¡Hola! 👋 Soy tu asistente de LandingLab.
 
-Voy a ayudarte a crear una landing page profesional para tu producto digital. Es súper simple: solo respondé unas preguntas sobre tu producto y yo me encargo del resto.
-
-¿Empezamos?`;
+Voy a ayudarte a crear una landing page profesional para tu producto digital. Es súper simple: solo respondé unas preguntas sobre tu producto y yo me encargo del resto.`;
 
 export const CONFIRMATION_INTRO = '📋 Perfecto, déjame resumir lo que entendí:\n\n';
 export const CONFIRMATION_OUTRO = '\n\n¿Está todo bien? Si querés cambiar algo, decime qué ajustar. Si está correcto, escribí **"dale"** y empiezo a construir tu landing.';

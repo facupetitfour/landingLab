@@ -24,8 +24,6 @@ export async function POST(request: Request) {
 
         const preapproval = new PreApproval(client);
 
-        // const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
         const result = await preapproval.create({
             body: {
                 back_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
