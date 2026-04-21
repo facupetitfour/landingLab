@@ -1,94 +1,130 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN as string
 });
 
+// 🔐 función de verificación
+function verifySignature(body: any, headers: Headers) {
+    const signature = headers.get('x-signature');
+    const requestId = headers.get('x-request-id');
+    const secret = process.env.MP_WEBHOOK_SECRET as string;
+
+    if (!signature || !requestId || !secret) return false;
+
+    const parts = signature.split(',');
+    const ts = parts.find(p => p.startsWith('ts='))?.split('=')[1];
+    const v1 = parts.find(p => p.startsWith('v1='))?.split('=')[1];
+
+    if (!ts || !v1) return false;
+
+    const dataId = body?.data?.id;
+    if (!dataId) return false;
+
+    const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+
+    const hash = crypto
+        .createHmac('sha256', secret)
+        .update(manifest)
+        .digest('hex');
+
+    return hash === v1;
+}
+
 export async function POST(request: Request) {
     try {
-        const url = new URL(request.url);
-        // MP puede enviar 'type' o 'topic' dependiendo de la configuración
-        const type = url.searchParams.get('type') || url.searchParams.get('topic');
-
         const body = await request.json();
-        const dataId = body?.data?.id || url.searchParams.get('data.id') || url.searchParams.get('id');
 
-        if (type === 'subscription_preapproval' && dataId) {
+        // 🔐 VALIDACIÓN DE FIRMA
+        const isValid = verifySignature(body, request.headers);
+
+        if (!isValid) {
+            console.warn('❌ Webhook inválido - firma incorrecta');
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const type = body?.type;
+        const dataId = body?.data?.id;
+
+        if (!type || !dataId) {
+            return NextResponse.json({ ok: true });
+        }
+
+        // =========================
+        // 🔁 SUSCRIPCIÓN
+        // =========================
+        if (type === 'preapproval') {
             const preapproval = new PreApproval(client);
-            const subscriptionInfo = await preapproval.get({ id: dataId });
-            const userId = subscriptionInfo.external_reference;
+            const subscription = await preapproval.get({ id: dataId });
 
-            if (userId) {
-                if (subscriptionInfo.status === 'authorized') {
-                    await prisma.profile.update({
-                        where: { clerkUserId: userId },
-                        data: {
-                            isSubscribed: true,
-                            subscriptionStatus: subscriptionInfo.status,
-                            mpSubscriptionId: dataId,
-                            credits: 3000 // Recarga inicial o renovación
-                        }
-                    });
-                    console.log(`Suscripción de usuario ${userId} autorizada. Créditos recargados a 3000.`);
-                } else if (subscriptionInfo.status === 'cancelled') {
-                    await prisma.profile.update({
-                        where: { clerkUserId: userId },
-                        data: {
-                            isSubscribed: false,
-                            subscriptionStatus: subscriptionInfo.status,
-                        }
-                    });
-                    console.log(`Suscripción de usuario ${userId} cancelada.`);
+            const userId = subscription.external_reference;
+            if (!userId) return NextResponse.json({ ok: true });
+
+            const status = subscription.status;
+
+            await prisma.profile.update({
+                where: { clerkUserId: userId },
+                data: {
+                    isSubscribed: status === 'authorized',
+                    subscriptionStatus: status,
+                    mpSubscriptionId: dataId
                 }
+            });
+        }
+
+        // =========================
+        // 💳 PAYMENT
+        // =========================
+        if (type === 'payment') {
+            const paymentClient = new Payment(client);
+            const payment = await paymentClient.get({ id: dataId });
+
+            const userId = payment.external_reference;
+            if (!userId) return NextResponse.json({ ok: true });
+
+            const profile = await prisma.profile.findUnique({
+                where: { clerkUserId: userId }
+            });
+
+            if (!profile) return NextResponse.json({ ok: true });
+
+            // 🔐 Idempotencia
+            const exists = await prisma.payment.findUnique({
+                where: { mpId: String(dataId) }
+            });
+
+            if (exists) {
+                return NextResponse.json({ ok: true });
             }
-        } else if (type === 'payment' && dataId) {
-            const payment = new Payment(client);
-            const paymentInfo = await payment.get({ id: dataId });
-            const userId = paymentInfo.external_reference;
 
-            if (userId) {
-                const profile = await prisma.profile.findUnique({
+            await prisma.payment.create({
+                data: {
+                    mpId: String(dataId),
+                    userId: profile.id,
+                    status: payment.status || 'unknown'
+                }
+            });
+
+            if (payment.status === 'approved') {
+                await prisma.profile.update({
                     where: { clerkUserId: userId },
-                    select: { id: true }
+                    data: {
+                        isSubscribed: true,
+                        credits: {
+                            increment: 3000
+                        }
+                    }
                 });
-
-                if (profile) {
-                    // 1. Guardar o actualizar registro histórico en la tabla Payment
-                    await prisma.payment.upsert({
-                        where: { mpId: String(dataId) },
-                        create: {
-                            mpId: String(dataId),
-                            userId: profile.id,
-                            status: paymentInfo.status || 'unknown'
-                        },
-                        update: {
-                            status: paymentInfo.status || 'unknown'
-                        }
-                    });
-                }
-
-                // 2. Si el pago está aprobado, recargar los créditos
-                if (paymentInfo.status === 'approved') {
-                    await prisma.profile.update({
-                        where: { clerkUserId: userId },
-                        data: {
-                            isSubscribed: true, // Por seguridad
-                            credits: 3000 // Recarga en cada pago aprobado
-                        }
-                    });
-                    console.log(`Pago mensual aprobado para usuario ${userId}. Créditos recargados a 3000 y pago guardado en historial.`);
-                } else {
-                    console.log(`Pago guardado para usuario ${userId} con estado: ${paymentInfo.status}`);
-                }
             }
         }
 
-        return NextResponse.json({ success: true }, { status: 200 });
+        return NextResponse.json({ ok: true });
 
     } catch (error) {
-        console.error('Error procesando webhook:', error);
-        return NextResponse.json({ error: 'Error interno' }, { status: 500 });
+        console.error('Webhook error:', error);
+        return NextResponse.json({ error: 'Internal error' }, { status: 500 });
     }
 }
