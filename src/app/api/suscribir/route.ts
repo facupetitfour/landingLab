@@ -12,7 +12,6 @@ export async function POST(request: Request) {
         const { userId } = await auth();
         const user = await currentUser();
         const { userEmail } = await request.json();
-
         if (!userId || !user) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
