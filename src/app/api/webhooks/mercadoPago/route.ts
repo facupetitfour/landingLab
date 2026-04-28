@@ -65,12 +65,28 @@ export async function POST(request: Request) {
 
             const status = subscription.status;
 
-            await prisma.profile.update({
-                where: { clerkUserId: userId },
-                data: {
-                    isSubscribed: status === 'authorized',
-                    subscriptionStatus: status,
-                    mpSubscriptionId: dataId
+            // Find profile
+            const profile = await prisma.profile.findUnique({
+                where: { clerkUserId: userId }
+            });
+
+            if (!profile) return NextResponse.json({ ok: true });
+
+            // Create or update Subscription
+            await prisma.subscription.upsert({
+                where: { userId: profile.id },
+                update: {
+                    mpSubscriptionId: dataId,
+                    status: status as any,
+                    currentPeriodStart: new Date(),
+                    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                },
+                create: {
+                    userId: profile.id,
+                    mpSubscriptionId: dataId,
+                    status: status as any,
+                    currentPeriodStart: new Date(),
+                    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                 }
             });
         }
@@ -104,18 +120,21 @@ export async function POST(request: Request) {
                 data: {
                     mpId: String(dataId),
                     userId: profile.id,
-                    status: payment.status || 'unknown'
+                    amount: payment.transaction_amount || 0,
+                    currency: payment.currency_id || 'ARS',
+                    status: payment.status || 'unknown',
+                    type: 'subscription',
+                    rawData: body as any
                 }
             });
 
             if (payment.status === 'approved') {
-                await prisma.profile.update({
-                    where: { clerkUserId: userId },
+                // Add credits via CreditLedger
+                await prisma.creditLedger.create({
                     data: {
-                        isSubscribed: true,
-                        credits: {
-                            increment: 3000
-                        }
+                        userId: profile.id,
+                        amount: 3000,
+                        reason: 'monthly_grant'
                     }
                 });
             }

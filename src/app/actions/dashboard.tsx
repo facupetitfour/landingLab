@@ -12,12 +12,20 @@ export async function getDashboardData() {
     }
 
     // 2. Validar suscripción buscando por clerkUserId
-    const user = await prisma.profile.findUnique({
+    const profile = await prisma.profile.findUnique({
         where: { clerkUserId: userId },
-        select: { isSubscribed: true }
+        select: { id: true }
     });
 
-    if (!user?.isSubscribed) {
+    if (!profile) {
+        throw new Error('Perfil no encontrado');
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+        where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
         throw new Error('Suscripción inactiva.');
     }
 

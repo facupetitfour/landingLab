@@ -12,6 +12,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get profile and check subscription
+    const profile = await prisma.profile.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
+      return NextResponse.json({ error: 'Subscription inactive' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { project_id, updatedCopyData } = body;
 
@@ -21,10 +38,10 @@ export async function POST(request: NextRequest) {
 
     // Fetch project
     const project = await prisma.project.findUnique({
-      where: { id: project_id }
+      where: { id: project_id, userId: profile.id, deletedAt: null }
     });
 
-    if (!project || project.userId !== userId) {
+    if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 

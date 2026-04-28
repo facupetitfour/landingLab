@@ -30,7 +30,11 @@ export async function POST(request: Request) {
         }
 
         // 🚫 Evitar doble suscripción activa
-        if (profile.isSubscribed) {
+        const existingSubscription = await prisma.subscription.findUnique({
+            where: { userId: profile.id }
+        });
+
+        if (existingSubscription && existingSubscription.status === 'authorized') {
             return NextResponse.json({ error: "Ya estás suscripto" }, { status: 400 });
         }
 
@@ -52,13 +56,21 @@ export async function POST(request: Request) {
             }
         });
 
-        // 💾 Guardar en Profile
-        await prisma.profile.update({
-            where: { clerkUserId: userId },
-            data: {
-                mpSubscriptionId: result.id,
-                subscriptionStatus: "pending",
-                isSubscribed: false,
+        // 💾 Crear o actualizar Subscription
+        await prisma.subscription.upsert({
+            where: { userId: profile.id },
+            update: {
+                mpSubscriptionId: result.id!,
+                status: 'pending',
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+            },
+            create: {
+                userId: profile.id,
+                mpSubscriptionId: result.id!,
+                status: 'pending',
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             }
         });
 

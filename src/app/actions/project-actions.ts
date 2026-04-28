@@ -88,21 +88,30 @@ export async function sendMessageAction(projectId: string, message?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autorizado');
 
-  const project = await prisma.project.findUnique({
-    where: { 
-      id: projectId,
-      profile: { clerkUserId: userId }
-    }
-  });
-
-  if (!project) throw new Error('Project not found');
-
   const profile = await prisma.profile.findUnique({
     where: { clerkUserId: userId },
     select: { id: true }
   });
 
   if (!profile) throw new Error('Profile not found');
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: profile.id }
+  });
+
+  if (!subscription || subscription.status !== 'authorized') {
+    throw new Error('Suscripción inactiva');
+  }
+
+  const project = await prisma.project.findUnique({
+    where: { 
+      id: projectId,
+      userId: profile.id,
+      deletedAt: null
+    }
+  });
+
+  if (!project) throw new Error('Project not found');
 
   const state: ConversationState = {
     status: project.status as any,
@@ -146,7 +155,7 @@ export async function sendMessageAction(projectId: string, message?: string) {
     return { messages: [], status: state.status };
   }
 
-  const hasCredits = await consumeCredits(userId, CREDIT_COSTS.CHAT_MESSAGE);
+  const hasCredits = await consumeCredits(profile.id, CREDIT_COSTS.CHAT_MESSAGE);
   if (!hasCredits) {
     return {
       messages: ['❌ No tenés suficientes créditos para enviar mensajes. Adquirí más créditos para continuar.'],
@@ -206,7 +215,7 @@ export async function sendMessageAction(projectId: string, message?: string) {
   revalidatePath(`/project/${projectId}`);
 
   if (response.shouldGenerate) {
-    const hasGenCredits = await consumeCredits(userId, CREDIT_COSTS.GENERATION);
+    const hasGenCredits = await consumeCredits(profile.id, CREDIT_COSTS.GENERATION);
     if (!hasGenCredits) {
       const errorMsg = '❌ No pudimos generar tu landing page porque no tenés suficientes créditos (se requieren 50).';
       await prisma.chatMessage.create({
@@ -366,10 +375,26 @@ export async function editCopyAction(projectId: string, instruction: string, qui
   const { userId } = await auth();
   if (!userId) throw new Error('No autorizado');
 
+  const profile = await prisma.profile.findUnique({
+    where: { clerkUserId: userId },
+    select: { id: true }
+  });
+
+  if (!profile) throw new Error('Profile not found');
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: profile.id }
+  });
+
+  if (!subscription || subscription.status !== 'authorized') {
+    throw new Error('Suscripción inactiva');
+  }
+
   const project = await prisma.project.findUnique({
     where: { 
       id: projectId,
-      profile: { clerkUserId: userId }
+      userId: profile.id,
+      deletedAt: null
     }
   });
 
@@ -386,7 +411,7 @@ export async function editCopyAction(projectId: string, instruction: string, qui
 
   if (!editInstruction) throw new Error('No edit instruction provided');
 
-  const hasCredits = await consumeCredits(userId, CREDIT_COSTS.EDIT);
+  const hasCredits = await consumeCredits(profile.id, CREDIT_COSTS.EDIT);
   if (!hasCredits) throw new Error('No tenés suficientes créditos para editar (se requieren 10).');
 
   await prisma.project.update({

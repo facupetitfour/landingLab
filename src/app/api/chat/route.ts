@@ -29,6 +29,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get profile and check subscription
+    const profile = await prisma.profile.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
+      return NextResponse.json({ error: 'Subscription inactive' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { project_id, message } = body;
 
@@ -38,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch current project state
     const project = await prisma.project.findUnique({
-      where: { id: project_id }
+      where: { id: project_id, userId: profile.id, deletedAt: null }
     });
 
     if (!project) {
@@ -91,10 +108,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Check credits before sending message
-    const hasCredits = await consumeCredits(userId, CREDIT_COSTS.CHAT_MESSAGE);
-    if (!hasCredits) {
+    const credits = await prisma.creditLedger.aggregate({
+      _sum: { amount: true },
+      where: { userId: profile.id }
+    });
+
+    if ((credits._sum.amount || 0) < CREDIT_COSTS.CHAT_MESSAGE) {
       return NextResponse.json({
         messages: ['❌ No tenés suficientes créditos para enviar mensajes. Adquirí más créditos para continuar.'],
+        status: state.status,
+        brief: state.briefData,
+        shouldGenerate: false,
+      });
+    }
+
+    const hasCredits = await consumeCredits(profile.id, CREDIT_COSTS.CHAT_MESSAGE);
+    if (!hasCredits) {
+      return NextResponse.json({
+        messages: ['❌ Error al consumir créditos.'],
         status: state.status,
         brief: state.briefData,
         shouldGenerate: false,
@@ -155,8 +186,12 @@ export async function POST(request: NextRequest) {
 
     // If should generate — trigger the generation pipeline
     if (response.shouldGenerate) {
-      const hasGenCredits = await consumeCredits(userId, CREDIT_COSTS.GENERATION);
-      if (!hasGenCredits) {
+      const genCredits = await prisma.creditLedger.aggregate({
+        _sum: { amount: true },
+        where: { userId: profile.id }
+      });
+
+      if ((genCredits._sum.amount || 0) < CREDIT_COSTS.GENERATION) {
         const errorMsg = '❌ No pudimos generar tu landing page porque no tenés suficientes créditos (se requieren 50).';
         await prisma.chatMessage.create({
           data: {
@@ -168,8 +203,22 @@ export async function POST(request: NextRequest) {
         response.messages.push(errorMsg);
         response.shouldGenerate = false;
       } else {
-        // Run generation in background (we respond immediately with status)
-        generateLanding(project_id, response.updatedBrief).catch(console.error);
+        const hasGenCredits = await consumeCredits(profile.id, CREDIT_COSTS.GENERATION);
+        if (!hasGenCredits) {
+          const errorMsg = '❌ Error al consumir créditos para generación.';
+          await prisma.chatMessage.create({
+            data: {
+              projectId: project_id,
+              role: 'assistant',
+              content: errorMsg,
+            }
+          });
+          response.messages.push(errorMsg);
+          response.shouldGenerate = false;
+        } else {
+          // Run generation in background (we respond immediately with status)
+          generateLanding(project_id, response.updatedBrief).catch(console.error);
+        }
       }
     }
 

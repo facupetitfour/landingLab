@@ -6,24 +6,110 @@ datasource db {
   provider = "postgresql"
 }
 
-model Profile {
-  id                 String    @id @default(cuid())
-  clerkUserId        String    @unique @map("clerk_user_id")
-  email              String    @unique
-  fullName           String?   @map("full_name")
-  avatarUrl          String?   @map("avatar_url")
-  createdAt          DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
-  updatedAt          DateTime? @default(now()) @updatedAt @db.Timestamptz(6) @map("updated_at")
-  credits            Int       @default(0)
-  isSubscribed       Boolean   @default(false) @map("is_subscribed")
-  mpSubscriptionId   String?   @map("mp_subscription_id")
-  subscriptionStatus String?   @map("subscription_status")
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
 
-  projects Project[]
-  payments Payment[]
+enum ChatRole {
+  user
+  assistant
+  system
+}
+
+enum SubscriptionStatus {
+  authorized
+  paused
+  cancelled
+  pending
+}
+
+enum CreditReason {
+  monthly_grant
+  ai_usage
+  bonus
+}
+
+//////////////////////////////////////////////////////
+// PROFILE (USUARIO BASE - CLERK)
+//////////////////////////////////////////////////////
+
+model Profile {
+  id           String   @id @default(cuid())
+  clerkUserId  String   @unique @map("clerk_user_id")
+  email        String   @unique
+  fullName     String?  @map("full_name")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  projects     Project[]
+  payments     Payment[]
+  subscription Subscription?
+  creditsLog   CreditLedger[]
 
   @@map("profiles")
 }
+
+//////////////////////////////////////////////////////
+// SUSCRIPCIONES (MERCADOPAGO)
+//////////////////////////////////////////////////////
+
+model Subscription {
+  id                 String            @id @default(cuid())
+  userId             String            @unique @map("user_id")
+  mpSubscriptionId   String            @unique @map("mp_subscription_id")
+  status             SubscriptionStatus // authorized, paused, cancelled
+  currentPeriodStart DateTime          @map("current_period_start")
+  currentPeriodEnd   DateTime          @map("current_period_end")
+  createdAt          DateTime          @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("subscriptions")
+}
+
+//////////////////////////////////////////////////////
+// PAGOS
+//////////////////////////////////////////////////////
+
+model Payment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id")
+  mpId      String   @unique @map("mp_id")
+  amount    Float
+  currency  String
+  status    String
+  type      String   // subscription | one_time
+  rawData   Json?    @map("raw_data")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payments")
+}
+
+//////////////////////////////////////////////////////
+// CREDITOS (LEDGER)
+//////////////////////////////////////////////////////
+
+model CreditLedger {
+  id        String       @id @default(cuid())
+  userId    String       @map("user_id")
+  amount    Int          // +3000 / -cost
+  reason    CreditReason // monthly_grant, ai_usage, bonus
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("credit_ledger")
+}
+
+//////////////////////////////////////////////////////
+// PROYECTOS
+//////////////////////////////////////////////////////
 
 model Project {
   id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -36,66 +122,66 @@ model Project {
   skeletonType         String    @default("standard_infoproduct") @map("skeleton_type")
   activeVersion        Int       @default(0) @map("active_version")
   currentQuestionIndex Int       @default(0) @map("current_question_index")
-  createdAt            DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
-  updatedAt            DateTime? @default(now()) @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   profile        Profile         @relation(fields: [userId], references: [id], onDelete: Cascade)
   chatMessages   ChatMessage[]
   projectOutputs ProjectOutput[]
 
-  @@index([userId], map: "idx_projects_user_id")
+  @@index([userId])
   @@map("projects")
 }
+
+//////////////////////////////////////////////////////
+// CHAT IA
+//////////////////////////////////////////////////////
 
 model ChatMessage {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId String    @map("project_id") @db.Uuid
-  role      String
+  role      ChatRole
   content   String
   metadata  Json?     @default("{}")
-  createdAt DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId], map: "idx_chat_messages_project_id")
+  @@index([projectId])
   @@map("chat_messages")
 }
 
+//////////////////////////////////////////////////////
+// OUTPUTS GENERADOS
+//////////////////////////////////////////////////////
+
 model ProjectOutput {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId   String    @map("project_id") @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
   version     Int
-  copyData    Json      @map("copy_data")
-  htmlContent String    @map("html_content")
-  createdAt   DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  copyData    Json     @map("copy_data")
+  htmlContent String   @map("html_content")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, version])
-  @@index([projectId], map: "idx_project_outputs_project_id")
+  @@index([projectId])
   @@map("project_outputs")
 }
 
+//////////////////////////////////////////////////////
+// PLANTILLAS
+//////////////////////////////////////////////////////
+
 model Skeleton {
-  id           String    @id
+  id           String   @id
   name         String
   description  String?
-  htmlTemplate String    @map("html_template")
-  version      Int       @default(1)
-  createdAt    DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  htmlTemplate String   @map("html_template")
+  version      Int      @default(1)
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("skeletons")
-}
-
-model Payment {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String    @map("user_id")
-  mpId      String    @unique @map("mp_id")
-  status    String
-  createdAt DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
-
-  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId], map: "idx_payments_user_id")
-  @@map("payments")
 }
