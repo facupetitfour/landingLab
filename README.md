@@ -29,8 +29,32 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Admin Dashboard
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The application includes a comprehensive admin dashboard for managing users, subscriptions, and credits.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Access
+
+- **URL**: `/admin`
+- **Authentication**: Clerk-based, restricted to admin emails
+- **Environment Variable**: Set `ADMIN_EMAILS` to a comma-separated list of admin email addresses
+
+### Features
+
+- **User Management**: View all users with subscription status and credit balances
+- **Search & Filter**: Search by email, filter by subscription status
+- **User Details**: Detailed view of individual users including:
+  - Profile information
+  - Subscription management (activate/pause/cancel)
+  - Credit management (view history, add credits)
+  - Payment history
+- **Payments Overview**: Global view of all payments across users
+- **Manual Subscription Granting**: Ability to manually activate subscriptions for users
+
+### API Endpoints
+
+- `GET /api/admin/users` - List users with filtering
+- `GET /api/admin/users/[id]` - Get detailed user information
+- `PATCH /api/admin/subscription` - Manage user subscriptions
+- `POST /api/admin/credits` - Add credits to users
+- `GET /api/admin/payments` - Get payment records

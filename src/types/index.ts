@@ -3,6 +3,7 @@ export type { StrategyData, MarketArchetype, SkeletonType } from './strategy';
 export type { CopyData, HeroSection, ProblemsSection, BenefitsSection, ProductSection, IncludesSection, BonusSection, GuaranteeSection, FaqSection, FinalOfferSection } from './copy';
 export type { ChatMessage, MessageRole, ProjectStatus, QuestionConfig } from './chat';
 export type { Project, ProjectOutput, ProjectListItem } from './project';
+export type { AdminUser, AdminUserDetail, CreditTransaction, PaymentRecord, SubscriptionAction, AdminApiResponse } from './admin';
 
 export { EMPTY_BRIEF, REQUIRED_BRIEF_FIELDS, OPTIONAL_BRIEF_FIELDS } from './brief';
 export { EMPTY_STRATEGY, ARCHETYPE_LABELS, SKELETON_LABELS } from './strategy';
