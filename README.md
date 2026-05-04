@@ -29,8 +29,61 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Admin Dashboard
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The application includes a comprehensive admin dashboard for managing users, subscriptions, and credits.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Access
+
+- **URL**: `/admin`
+- **Authentication**: Clerk-based, restricted to admin emails
+- **Environment Variable**: Set `ADMIN_EMAILS` to a comma-separated list of admin email addresses
+
+### Features
+
+- **User Management**: View all users with subscription status and credit balances
+- **Search & Filter**: Search by email, filter by subscription status
+- **User Details**: Detailed view of individual users including:
+  - Profile information
+  - Subscription management (activate/pause/cancel)
+  - Credit management (view history, add credits)
+  - Payment history
+### Authorization System
+
+The admin system uses a multi-layer security approach:
+
+#### 1. Middleware Protection (`src/proxy.ts`)
+- Protects all `/admin/*` routes
+- Redirects non-authenticated users to `/`
+- Validates admin email against `ADMIN_EMAILS`
+- Redirects non-admin users to `/`
+
+#### 2. Server-side Validation (`src/lib/isAdmin.ts`)
+- Reusable function for checking admin status
+- Used in all admin API routes and pages
+- Validates user authentication and email permissions
+
+#### 3. API Route Protection
+All `/api/admin/*` routes include:
+```ts
+const admin = await isAdmin();
+if (!admin) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
+```
+
+#### 4. Page-level Protection
+Admin pages use server-side checks:
+```ts
+const admin = await isAdmin();
+if (!admin) {
+  redirect('/');
+}
+```
+
+### Security Notes
+
+- **Never trust client-side validation** - All admin checks happen server-side
+- **Environment variables** - Admin emails are server-only, not exposed to client
+- **Multi-layer protection** - Middleware + API validation + page checks
+- **Audit logging** - Console logs in development for debugging
