@@ -2,6 +2,7 @@
 import { createUserProfile, getProfileByUserId } from '@/lib/user/user_lib';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
@@ -30,7 +31,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       );
     }
 
-    if (Boolean(profile.isSubscribed) === false) {
+    // Check subscription status
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
       requiresSubscriptionRedirect = true;
     }
 

@@ -12,20 +12,34 @@ export async function getDashboardData() {
 
     const profile = await prisma.profile.findUnique({
         where: { clerkUserId: userId },
-        select: { credits: true, isSubscribed: true },
+        select: { id: true },
     });
 
-    if (!profile?.isSubscribed) {
+    if (!profile) {
+        throw new Error('Perfil no encontrado');
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+        where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
         throw new Error('Suscripción inactiva.');
     }
 
     const projects = await prisma.project.findMany({
         where: {
-            profile: { clerkUserId: userId }
+            profile: { clerkUserId: userId },
+            deletedAt: null
         },
         orderBy: {
             createdAt: 'desc' // Asegúrate de usar el nombre exacto de tu propiedad Prisma
         }
+    });
+
+    const credits = await prisma.creditLedger.aggregate({
+        _sum: { amount: true },
+        where: { userId: profile.id }
     });
 
     const formattedProjects = projects.map((p) => ({
@@ -36,7 +50,7 @@ export async function getDashboardData() {
     }));
 
     return {
-        credits: profile.credits,
+        credits: credits._sum.amount || 0,
         projects: formattedProjects,
     };
 }
@@ -63,11 +77,14 @@ export async function deleteProjectAction(projectId: string) {
     const { userId } = await auth();
     if (!userId) throw new Error('No autorizado');
 
-    await prisma.project.delete({
+    await prisma.project.update({
         where: {
             id: projectId,
             profile: { clerkUserId: userId }, // Prevención de IDOR
         },
+        data: {
+            deletedAt: new Date()
+        }
     });
 
     revalidatePath('/dashboard');

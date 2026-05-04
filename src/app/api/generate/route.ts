@@ -12,6 +12,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get profile and check subscription
+    const profile = await prisma.profile.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
+      return NextResponse.json({ error: 'Subscription inactive' }, { status: 403 });
+    }
+
     const projectId = request.nextUrl.searchParams.get('project_id');
     if (!projectId) {
       return NextResponse.json({ error: 'Missing project_id' }, { status: 400 });
@@ -19,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch project status
     const project = await prisma.project.findUnique({
-      where: { id: projectId },
+      where: { id: projectId, userId: profile.id, deletedAt: null },
       select: {
         status: true,
         strategyData: true,

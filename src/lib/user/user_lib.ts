@@ -8,7 +8,7 @@ export async function getProfileByUserId(userId: string) {
 }
 
 export async function createUserProfile(userId: string, email: string, fullName: string, avatarUrl: string | null) {
-    return await prisma.profile.create({
+    const profile = await prisma.profile.create({
         data: {
             clerkUserId: userId,
             email,
@@ -16,4 +16,26 @@ export async function createUserProfile(userId: string, email: string, fullName:
             avatarUrl,
         }
     });
+
+    // Create initial subscription (inactive)
+    await prisma.subscription.create({
+        data: {
+            userId: profile.id,
+            mpSubscriptionId: `pending-${profile.id}`, // unique placeholder
+            status: 'paused',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date()
+        }
+    });
+
+    // Initial credits if needed, but probably not since they get on payment
+    // await prisma.creditLedger.create({
+    //     data: {
+    //         userId: profile.id,
+    //         amount: 3000,
+    //         reason: 'monthly_grant'
+    //     }
+    // });
+
+    return profile;
 }

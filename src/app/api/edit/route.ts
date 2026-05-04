@@ -17,6 +17,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get profile and check subscription
+    const profile = await prisma.profile.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: profile.id }
+    });
+
+    if (!subscription || subscription.status !== 'authorized') {
+      return NextResponse.json({ error: 'Subscription inactive' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { project_id, instruction, quick_edit_key } = body;
 
@@ -26,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch project and latest output
     const project = await prisma.project.findUnique({
-      where: { id: project_id }
+      where: { id: project_id, userId: profile.id, deletedAt: null }
     });
 
     if (!project) {
@@ -51,9 +68,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No edit instruction provided' }, { status: 400 });
     }
 
-    const hasCredits = await consumeCredits(userId, CREDIT_COSTS.EDIT);
-    if (!hasCredits) {
+    // Check credits
+    const credits = await prisma.creditLedger.aggregate({
+      _sum: { amount: true },
+      where: { userId: profile.id }
+    });
+
+    if ((credits._sum.amount || 0) < CREDIT_COSTS.EDIT) {
       return NextResponse.json({ error: 'No tenés suficientes créditos para editar (se requieren 10).' }, { status: 402 });
+    }
+
+    const hasCredits = await consumeCredits(profile.id, CREDIT_COSTS.EDIT);
+    if (!hasCredits) {
+      return NextResponse.json({ error: 'Error al consumir créditos.' }, { status: 500 });
     }
 
     // Update project status
