@@ -58,10 +58,12 @@ model Subscription {
   id                 String            @id @default(cuid())
   userId             String            @unique @map("user_id")
   mpSubscriptionId   String            @unique @map("mp_subscription_id")
-  status             SubscriptionStatus // authorized, paused, cancelled
+  status             SubscriptionStatus @default(pending)// authorized, paused, cancelled
+  cancelAtPeriodEnd  Boolean           @default(false)
   currentPeriodStart DateTime          @map("current_period_start")
   currentPeriodEnd   DateTime          @map("current_period_end")
   createdAt          DateTime          @default(now()) @map("created_at")
+  userEmailmp        String?            
 
   profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
 

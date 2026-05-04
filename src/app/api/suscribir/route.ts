@@ -63,14 +63,16 @@ export async function POST(request: Request) {
                 mpSubscriptionId: result.id!,
                 status: 'pending',
                 currentPeriodStart: new Date(),
-                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+                userEmailmp: userEmail
             },
             create: {
                 userId: profile.id,
                 mpSubscriptionId: result.id!,
                 status: 'pending',
                 currentPeriodStart: new Date(),
-                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                userEmailmp: userEmail
             }
         });
 
@@ -81,27 +83,3 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Error al procesar" }, { status: 500 });
     }
 }
-
-// export async function POST2(requiest: Request) {
-//             const preference = new Preference(client)
-
-//         const preferenceResult = await preference.create({
-//             body: {
-//                 items: [
-//                     {
-//                         id: "21231",
-//                         title: 'Mi producto',
-//                         quantity: 1,
-//                         unit_price: 100,
-//                     }
-//                 ],
-                
-//                 back_urls: {
-//                     success: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-//                     failure: `${process.env.NEXT_PUBLIC_APP_URL}/failure`,
-//                     pending: `${process.env.NEXT_PUBLIC_APP_URL}/pending`
-//                 },
-//                 auto_return: "approved",
-//             }
-//         })
-// }
