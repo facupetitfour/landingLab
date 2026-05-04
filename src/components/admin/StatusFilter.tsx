@@ -18,7 +18,7 @@ export function StatusFilter({ value, onChange }: StatusFilterProps) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+      className="admin-select"
     >
       {statusOptions.map((option) => (
         <option key={option.value} value={option.value}>

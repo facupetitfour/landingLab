@@ -48,13 +48,42 @@ The application includes a comprehensive admin dashboard for managing users, sub
   - Subscription management (activate/pause/cancel)
   - Credit management (view history, add credits)
   - Payment history
-- **Payments Overview**: Global view of all payments across users
-- **Manual Subscription Granting**: Ability to manually activate subscriptions for users
+### Authorization System
 
-### API Endpoints
+The admin system uses a multi-layer security approach:
 
-- `GET /api/admin/users` - List users with filtering
-- `GET /api/admin/users/[id]` - Get detailed user information
-- `PATCH /api/admin/subscription` - Manage user subscriptions
-- `POST /api/admin/credits` - Add credits to users
-- `GET /api/admin/payments` - Get payment records
+#### 1. Middleware Protection (`src/proxy.ts`)
+- Protects all `/admin/*` routes
+- Redirects non-authenticated users to `/`
+- Validates admin email against `ADMIN_EMAILS`
+- Redirects non-admin users to `/`
+
+#### 2. Server-side Validation (`src/lib/isAdmin.ts`)
+- Reusable function for checking admin status
+- Used in all admin API routes and pages
+- Validates user authentication and email permissions
+
+#### 3. API Route Protection
+All `/api/admin/*` routes include:
+```ts
+const admin = await isAdmin();
+if (!admin) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
+```
+
+#### 4. Page-level Protection
+Admin pages use server-side checks:
+```ts
+const admin = await isAdmin();
+if (!admin) {
+  redirect('/');
+}
+```
+
+### Security Notes
+
+- **Never trust client-side validation** - All admin checks happen server-side
+- **Environment variables** - Admin emails are server-only, not exposed to client
+- **Multi-layer protection** - Middleware + API validation + page checks
+- **Audit logging** - Console logs in development for debugging

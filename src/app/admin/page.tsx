@@ -37,18 +37,18 @@ export default function AdminPage() {
   }, [searchTerm, statusFilter]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Users Management</h1>
+    <div className="admin-page">
+      <div className="admin-header">
+        <h1 className="admin-heading">Users Management</h1>
       </div>
 
-      <div className="flex gap-4">
+      <div className="admin-toolbar">
         <SearchBar value={searchTerm} onChange={setSearchTerm} />
         <StatusFilter value={statusFilter} onChange={setStatusFilter} />
       </div>
 
       {error && (
-        <div className="bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] px-4 py-3 rounded-lg">
+        <div className="admin-alert admin-alert-error">
           {error}
         </div>
       )}

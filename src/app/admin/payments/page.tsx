@@ -28,68 +28,52 @@ export default function AdminPaymentsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Payments Overview</h1>
+    <div className="admin-page">
+      <div className="admin-header">
+        <h1 className="admin-heading">Payments Overview</h1>
       </div>
 
       {error && (
-        <div className="bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] px-4 py-3 rounded-lg">
+        <div className="admin-alert admin-alert-error">
           {error}
         </div>
       )}
 
-      <div className="bg-[var(--bg-secondary)] rounded-lg overflow-hidden">
+      <div className="admin-table-container">
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-primary)]"></div>
+          <div className="admin-loader">
+            <div className="admin-spinner"></div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[var(--bg-elevated)]">
+          <div className="admin-table-scroll">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                    Currency
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                    Date
-                  </th>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Currency</th>
+                  <th>Status</th>
+                  <th>Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--bg-surface)]">
+              <tbody>
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-[var(--bg-elevated)]">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-primary)]">
-                      {payment.userEmail || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-primary)]">
-                      {payment.amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-primary)]">
-                      {payment.currency.toUpperCase()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  <tr key={payment.id}>
+                    <td>{payment.userEmail || '-'}</td>
+                    <td>{payment.amount.toLocaleString()}</td>
+                    <td>{payment.currency.toUpperCase()}</td>
+                    <td>
+                      <span className={`admin-pill ${
                         payment.status === 'approved'
-                          ? 'bg-[var(--success-bg)] text-[var(--success)]'
+                          ? 'admin-pill-authorized'
                           : payment.status === 'pending'
-                          ? 'bg-[var(--warning-bg)] text-[var(--warning)]'
-                          : 'bg-[var(--error-bg)] text-[var(--error)]'
+                          ? 'admin-pill-pending'
+                          : 'admin-pill-error'
                       }`}>
                         {payment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
+                    <td className="admin-text-muted">
                       {new Date(payment.createdAt).toLocaleDateString()} {new Date(payment.createdAt).toLocaleTimeString()}
                     </td>
                   </tr>
@@ -100,7 +84,7 @@ export default function AdminPaymentsPage() {
         )}
 
         {payments.length === 0 && !loading && (
-          <div className="text-center py-12 text-[var(--text-muted)]">
+          <div className="admin-empty">
             No payments found
           </div>
         )}

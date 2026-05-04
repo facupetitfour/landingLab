@@ -8,34 +8,24 @@ interface UserProfileProps {
 
 export function UserProfile({ user }: UserProfileProps) {
   return (
-    <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="admin-card admin-card--padded">
+      <h2 className="admin-card-title">Profile Information</h2>
+      <div className="admin-meta-grid">
         <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-            Email
-          </label>
-          <p className="text-[var(--text-primary)]">{user.email}</p>
+          <label className="admin-label">Email</label>
+          <p>{user.email}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-            Full Name
-          </label>
-          <p className="text-[var(--text-primary)]">{user.fullName || '-'}</p>
+          <label className="admin-label">Full Name</label>
+          <p>{user.fullName || '-'}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-            Created At
-          </label>
-          <p className="text-[var(--text-primary)]">
-            {new Date(user.createdAt).toLocaleDateString()} {new Date(user.createdAt).toLocaleTimeString()}
-          </p>
+          <label className="admin-label">Created At</label>
+          <p>{new Date(user.createdAt).toLocaleDateString()} {new Date(user.createdAt).toLocaleTimeString()}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-            Current Credits
-          </label>
-          <p className="text-[var(--text-primary)] font-semibold">
+          <label className="admin-label">Current Credits</label>
+          <p className="admin-text-secondary" style={{ fontWeight: 600 }}>
             {user.currentCredits.toLocaleString()}
           </p>
         </div>

@@ -1,4 +1,4 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
+import './admin.css';
 import { redirect } from 'next/navigation';
 import { isAdmin } from '@/lib/isAdmin';
 
@@ -14,28 +14,22 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <div className="flex">
+    <div className="admin-shell">
+      <div className="admin-row">
         {/* Sidebar */}
-        <aside className="w-64 bg-[var(--bg-secondary)] border-r border-[var(--bg-surface)]">
-          <div className="p-6">
-            <h1 className="text-xl font-bold text-[var(--accent-primary)]">Admin Dashboard</h1>
+        <aside className="admin-sidebar">
+          <div className="admin-sidebar-inner">
+            <h1 className="admin-sidebar-title">Admin Dashboard</h1>
           </div>
-          <nav className="px-4">
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="/admin"
-                  className="block px-4 py-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
-                >
+          <nav className="admin-nav">
+            <ul className="admin-nav-list">
+              <li className="admin-nav-item">
+                <a href="/admin" className="admin-nav-link">
                   Users
                 </a>
               </li>
-              <li>
-                <a
-                  href="/admin/payments"
-                  className="block px-4 py-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
-                >
+              <li className="admin-nav-item">
+                <a href="/admin/payments" className="admin-nav-link">
                   Payments
                 </a>
               </li>
@@ -44,7 +38,7 @@ export default async function AdminLayout({
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 p-8">
+        <main className="admin-main">
           {children}
         </main>
       </div>

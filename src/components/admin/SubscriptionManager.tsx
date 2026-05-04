@@ -38,60 +38,50 @@ export function SubscriptionManager({ userId, subscription, onUpdate }: Subscrip
   };
 
   return (
-    <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">Subscription Management</h3>
+    <div className="admin-card admin-card--padded">
+      <h3 className="admin-card-title">Subscription Management</h3>
 
       {subscription ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
+        <div className="admin-card-section">
+          <div className="admin-meta-grid">
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                Status
-              </label>
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              <label className="admin-label">Status</label>
+              <span className={`admin-pill ${
                 subscription.status === 'authorized'
-                  ? 'bg-[var(--success-bg)] text-[var(--success)]'
+                  ? 'admin-pill-authorized'
                   : subscription.status === 'paused'
-                  ? 'bg-[var(--warning-bg)] text-[var(--warning)]'
-                  : 'bg-[var(--error-bg)] text-[var(--error)]'
+                  ? 'admin-pill-paused'
+                  : 'admin-pill-error'
               }`}>
                 {subscription.status}
               </span>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                MercadoPago ID
-              </label>
-              <p className="text-[var(--text-primary)] font-mono text-sm">
+              <label className="admin-label">MercadoPago ID</label>
+              <p className="admin-text-secondary" style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>
                 {subscription.mpSubscriptionId}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  Current Period Start
-                </label>
-                <p className="text-[var(--text-primary)] text-sm">
-                  {new Date(subscription.currentPeriodStart).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  Current Period End
-                </label>
-                <p className="text-[var(--text-primary)] text-sm">
-                  {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-                </p>
-              </div>
+            <div>
+              <label className="admin-label">Current Period Start</label>
+              <p className="admin-text-secondary" style={{ fontSize: '0.9rem' }}>
+                {new Date(subscription.currentPeriodStart).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <label className="admin-label">Current Period End</label>
+              <p className="admin-text-secondary" style={{ fontSize: '0.9rem' }}>
+                {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+              </p>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="admin-button-group">
             {subscription.status !== 'authorized' && (
               <button
                 onClick={() => handleAction('activate')}
                 disabled={loading}
-                className="px-4 py-2 bg-[var(--success)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                className="admin-button admin-button-success"
               >
                 {loading ? 'Updating...' : 'Activate'}
               </button>
@@ -100,7 +90,7 @@ export function SubscriptionManager({ userId, subscription, onUpdate }: Subscrip
               <button
                 onClick={() => handleAction('pause')}
                 disabled={loading}
-                className="px-4 py-2 bg-[var(--warning)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                className="admin-button admin-button-warning"
               >
                 {loading ? 'Updating...' : 'Pause'}
               </button>
@@ -109,7 +99,7 @@ export function SubscriptionManager({ userId, subscription, onUpdate }: Subscrip
               <button
                 onClick={() => handleAction('cancel')}
                 disabled={loading}
-                className="px-4 py-2 bg-[var(--error)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                className="admin-button admin-button-danger"
               >
                 {loading ? 'Updating...' : 'Cancel'}
               </button>
@@ -117,12 +107,12 @@ export function SubscriptionManager({ userId, subscription, onUpdate }: Subscrip
           </div>
         </div>
       ) : (
-        <div className="text-center py-8">
-          <p className="text-[var(--text-muted)] mb-4">No subscription found</p>
+        <div className="admin-card-section" style={{ textAlign: 'center' }}>
+          <p className="admin-text-muted" style={{ marginBottom: '1rem' }}>No subscription found</p>
           <button
             onClick={() => handleAction('activate')}
             disabled={loading}
-            className="px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50"
+            className="admin-button admin-button-primary"
           >
             {loading ? 'Creating...' : 'Grant Premium (Manual)'}
           </button>
@@ -130,7 +120,7 @@ export function SubscriptionManager({ userId, subscription, onUpdate }: Subscrip
       )}
 
       {error && (
-        <div className="mt-4 bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] px-4 py-3 rounded-lg">
+        <div className="admin-alert admin-alert-error" style={{ marginTop: '1rem' }}>
           {error}
         </div>
       )}

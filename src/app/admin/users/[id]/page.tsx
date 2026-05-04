@@ -39,35 +39,35 @@ export default function UserDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-primary)]"></div>
+      <div className="admin-loader">
+        <div className="admin-spinner"></div>
       </div>
     );
   }
 
   if (error || !user) {
     return (
-      <div className="bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] px-4 py-3 rounded-lg">
+      <div className="admin-alert admin-alert-error">
         {error || 'User not found'}
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
+    <div className="admin-page">
+      <div className="admin-header admin-card-section">
         <button
           onClick={() => window.history.back()}
-          className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] rounded-lg transition-colors"
+          className="admin-button admin-button-muted"
         >
           ← Back to Users
         </button>
-        <h1 className="text-2xl font-bold">User Details</h1>
+        <h1 className="admin-heading">User Details</h1>
       </div>
 
       <UserProfile user={user} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="admin-grid-2">
         <SubscriptionManager
           userId={user.id}
           subscription={user.subscription}

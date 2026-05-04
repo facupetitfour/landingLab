@@ -9,8 +9,19 @@ const isProtectedRoute = createRouteMatcher([
   '/api/generate(.*)',
 ]);
 
+const isAdminRoute = createRouteMatcher([
+  '/admin(.*)',
+]);
+
 export default clerkMiddleware(async (auth, request) => {
+  // Protect regular authenticated routes
   if (isProtectedRoute(request)) {
+    await auth.protect();
+  }
+
+  // Require authentication for admin routes as well.
+  // Admin email validation is handled in server-side page and API checks.
+  if (isAdminRoute(request)) {
     await auth.protect();
   }
 });

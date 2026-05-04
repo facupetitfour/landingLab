@@ -51,58 +51,62 @@ export function CreditsManager({ userId, currentCredits, creditsHistory, onUpdat
   };
 
   return (
-    <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">Credits Management</h3>
+    <div className="admin-card admin-card--padded">
+      <h3 className="admin-card-title">Credits Management</h3>
 
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-[var(--text-secondary)]">Current Balance</span>
-          <span className="text-2xl font-bold text-[var(--accent-primary)]">
-            {currentCredits.toLocaleString()}
-          </span>
+      <div className="admin-card-section">
+        <div className="admin-meta-grid" style={{ alignItems: 'center' }}>
+          <div>
+            <span className="admin-label">Current Balance</span>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span className="admin-heading" style={{ fontSize: '1.5rem' }}>
+              {currentCredits.toLocaleString()}
+            </span>
+          </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="admin-button-group" style={{ gap: '0.75rem' }}>
           <input
             type="number"
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="flex-1 px-3 py-2 bg-[var(--bg-primary)] border border-[var(--bg-surface)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+            className="admin-input"
           />
           <button
             onClick={handleAddCredits}
             disabled={loading || !amount}
-            className="px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50"
+            className="admin-button admin-button-primary"
           >
             {loading ? 'Adding...' : 'Add Credits'}
           </button>
         </div>
 
         {error && (
-          <div className="mt-2 bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] px-3 py-2 rounded-lg text-sm">
+          <div className="admin-alert admin-alert-error" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
             {error}
           </div>
         )}
       </div>
 
       <div>
-        <h4 className="text-md font-medium mb-3">Credit History</h4>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <h4 className="admin-card-title">Credit History</h4>
+        <div className="admin-history-list">
           {creditsHistory.length === 0 ? (
-            <p className="text-[var(--text-muted)] text-sm">No credit transactions</p>
+            <p className="admin-text-muted">No credit transactions</p>
           ) : (
             creditsHistory.map((transaction) => (
-              <div key={transaction.id} className="flex justify-between items-center py-2 px-3 bg-[var(--bg-primary)] rounded">
+              <div key={transaction.id} className="admin-history-row">
                 <div>
-                  <span className={`font-medium ${transaction.amount > 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
+                  <span className={transaction.amount > 0 ? 'admin-pill admin-pill-authorized' : 'admin-pill admin-pill-error'}>
                     {transaction.amount > 0 ? '+' : ''}{transaction.amount}
                   </span>
-                  <span className="text-[var(--text-secondary)] text-sm ml-2">
+                  <span className="admin-text-muted" style={{ marginLeft: '0.5rem' }}>
                     {transaction.reason.replace('_', ' ')}
                   </span>
                 </div>
-                <span className="text-[var(--text-muted)] text-sm">
+                <span className="admin-text-muted">
                   {new Date(transaction.createdAt).toLocaleDateString()}
                 </span>
               </div>

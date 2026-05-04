@@ -1,29 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { AdminUserDetail } from '@/types';
-
-const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(',') || [];
-
-async function verifyAdmin(request: NextRequest) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return false;
-  }
-
-  const user = await currentUser();
-  const userEmail = user?.primaryEmailAddress?.emailAddress;
-
-  return userEmail && ADMIN_EMAILS.includes(userEmail);
-}
+import { isAdmin } from '@/lib/isAdmin';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!(await verifyAdmin(request))) {
+    const admin = await isAdmin();
+
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
