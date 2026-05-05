@@ -37,8 +37,9 @@ function verifySignature(body: any, headers: Headers) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
 
+    const body = await request.json();
+    console.log('📬 Webhook recibido:', body);
     // 🔐 Validar firma
     const isValid = verifySignature(body, request.headers);
 
