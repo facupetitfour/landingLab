@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Mail, AlertCircle, CheckCircle2 } from "lucide-react";
+import { checkSubscriptionStatus } from "@/app/actions/projects";
+import styles from "./page.module.css";
 
 export default function SuscribirPage() {
 	const router = useRouter();
@@ -14,6 +16,7 @@ export default function SuscribirPage() {
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
 	const [useAccountEmail, setUseAccountEmail] = useState(true);
+	const [checkingSubscription, setCheckingSubscription] = useState(true);
 
 	// 📌 Inicialización
 	useEffect(() => {
@@ -34,6 +37,20 @@ export default function SuscribirPage() {
 			setEmail(user.primaryEmailAddress.emailAddress);
 		}
 	}, [useAccountEmail, user]);
+
+	useEffect(() => {
+		if (isLoaded && user) {
+			checkSubscriptionStatus().then(({ isSubscribed }) => {
+				if (isSubscribed) {
+					router.push('/dashboard');
+				} else {
+					setCheckingSubscription(false);
+				}
+			}).catch(() => {
+				setCheckingSubscription(false);
+			});
+		}
+	}, [isLoaded, user, router]);
 
 	// 📧 Validación real de email
 	const isValidEmail = (email: string) => {
@@ -79,12 +96,12 @@ export default function SuscribirPage() {
 		}
 	};
 
-	if (!isLoaded) {
+	if (!isLoaded || checkingSubscription) {
 		return (
 			<div className="app-shell">
-				<div className="generating-overlay" style={{ flex: 1 }}>
-					<div className="generating-spinner"></div>
-					<p style={{ marginTop: "16px" }}>Cargando...</p>
+				<div className={`${styles.loadingOverlay} ${styles.spinner}`}>
+					<div className={styles.spinnerIcon}></div>
+					<p className={styles.loadingText}>Cargando...</p>
 				</div>
 			</div>
 		);
@@ -92,126 +109,53 @@ export default function SuscribirPage() {
 
 	// 📧 COMPONENTE EMAIL REUTILIZABLE
 	const EmailInput = (
-		<div style={{ textAlign: "left", marginBottom: "24px" }}>
-			<label
-				style={{
-					fontSize: "14px",
-					marginBottom: "12px",
-					display: "block",
-					fontWeight: 600,
-				}}
-			>
+		<div className={styles.emailInputContainer}>
+			<label className={styles.emailLabel}>
 				Email para la suscripción
 			</label>
 
 			{/* Opción 1: Email de la cuenta */}
 			<div
 				onClick={() => !loading && setUseAccountEmail(true)} // Bloquear si está cargando
-				style={{
-					display: "flex",
-					alignItems: "center",
-					padding: "16px",
-					cursor: "pointer",
-					borderRadius: "12px",
-					border: useAccountEmail
-						? "2px solid var(--accent-primary)"
-						: "1px solid var(--bg-elevated)",
-					backgroundColor: useAccountEmail
-						? "var(--accent-deep)"
-						: "var(--bg-secondary)",
-					marginBottom: "12px",
-					transition: "all 0.2s ease",
-				}}
+				className={`${styles.emailOption} ${useAccountEmail ? styles.selected : styles.unselected}`}
 			>
 				<input
 					type="radio"
 					checked={useAccountEmail}
 					readOnly
-					style={{
-						marginRight: "12px",
-						accentColor: "var(--accent-primary)",
-						width: "18px",
-						height: "18px",
-						cursor: "pointer",
-					}}
+					className={styles.radioInput}
 				/>
-				<div style={{ flex: 1 }}>
-					<div
-						style={{
-							fontSize: "14px",
-							fontWeight: 500,
-							color: "var(--text-primary, inherit)",
-						}}
-					>
+				<div className={styles.emailOptionContent}>
+					<div className={styles.emailOptionTitle}>
 						Usar mi email de cuenta
 					</div>
-					<div
-						style={{
-							fontSize: "12px",
-							color: "var(--text-secondary, #666)",
-							display: "flex",
-							alignItems: "center",
-							gap: "6px",
-							marginTop: "4px",
-						}}
-					>
+					<div className={styles.emailOptionSubtitle}>
 						<Mail size={14} /> {user?.primaryEmailAddress?.emailAddress}
 					</div>
 				</div>
 				{useAccountEmail && (
-					<CheckCircle2 color="var(--accent-primary)" size={20} />
+					<CheckCircle2 className={styles.checkIcon} size={20} />
 				)}
 			</div>
 
 			{/* Opción 2: Otro Email */}
 			<div
 				onClick={() => setUseAccountEmail(false)}
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					padding: "16px",
-					cursor: "pointer",
-					borderRadius: "12px",
-					border: !useAccountEmail
-						? "2px solid var(--accent-primary)"
-						: "1px solid var(--bg-elevated)",
-					backgroundColor: !useAccountEmail
-						? "var(--accent-deep)"
-						: "var(--bg-secondary)",
-					transition: "all 0.2s ease",
-				}}
+				className={`${styles.customEmailContainer} ${!useAccountEmail ? styles.selected : styles.unselected}`}
 			>
-				<div style={{ display: "flex", alignItems: "flex-start" }}>
+				<div className={styles.customEmailHeader}>
 					<input
 						type="radio"
 						checked={!useAccountEmail}
 						readOnly
-						style={{
-							marginRight: "12px",
-							marginTop: "2px",
-							accentColor: "var(--accent-primary)",
-							width: "18px",
-							height: "18px",
-							cursor: "pointer",
-						}}
+						className={styles.radioInput}
+						style={{ marginTop: "2px" }}
 					/>
 					<div style={{ flex: 1 }}>
-						<div
-							style={{
-								fontSize: "14px",
-								fontWeight: 500,
-								color: "var(--text-primary, inherit)",
-							}}
-						>
+						<div className={styles.customEmailTitle}>
 							Usar un email diferente de Mercado Pago
 						</div>
-						<div
-							style={{
-								fontSize: "12px",
-								color: "var(--text-secondary, #666)",
-								marginTop: "4px",
-							}}
-						>
+						<div className={styles.customEmailSubtitle}>
 							Elige esta opción si tu cuenta de MP es distinta.
 						</div>
 					</div>
@@ -219,7 +163,7 @@ export default function SuscribirPage() {
 
 				{/* Input Condicional para el nuevo email */}
 				{!useAccountEmail && (
-					<div style={{ marginTop: "16px", position: "relative" }}>
+					<div className={styles.customEmailInputContainer}>
 						<input
 							type="email"
 							placeholder="Ej: tu-email-mp@correo.com"
@@ -230,32 +174,10 @@ export default function SuscribirPage() {
 							}}
 							disabled={loading}
 							autoFocus
-							style={{
-								width: "100%",
-								padding: "12px 16px",
-								borderRadius: "8px",
-								border: error
-									? "1px solid #ef4444"
-									: "1px solid var(--border, #96969659)",
-								background: "var(--bg-secondary)",
-								color: "var(--text-primary, inherit)",
-								fontSize: "14px",
-								outline: "none",
-								boxShadow: error ? "0 0 0 2px rgba(239, 68, 68, 0.2)" : "none",
-								transition: "all 0.2s ease",
-							}}
+							className={`${styles.customEmailInput} ${error ? styles.error : ""}`}
 						/>
 						{error && (
-							<div
-								style={{
-									display: "flex",
-									alignItems: "center",
-									gap: "4px",
-									marginTop: "8px",
-									color: "#ef4444",
-									fontSize: "13px",
-								}}
-							>
+							<div className={styles.errorMessage}>
 								<AlertCircle size={14} />
 								<span>{error}</span>
 							</div>
@@ -286,32 +208,15 @@ export default function SuscribirPage() {
 				<UserButton />
 			</header>
 
-			<main
-				style={{
-					flex: 1,
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					padding: "24px",
-				}}
-			>
-				<div
-					className="card"
-					style={{
-						maxWidth: "520px",
-						width: "100%",
-						padding: "28px",
-						borderRadius: "20px",
-						textAlign: "center",
-					}}
-				>
-					<h1 style={{ fontSize: "24px", marginBottom: "10px" }}>
+			<main className={styles.main}>
+				<div className={`card ${styles.card}`}>
+					<h1 className={styles.title}>
 						{isNewUser
 							? "✨ Bienvenido a LandingLab"
 							: "👋 Reactivá tu suscripción"}
 					</h1>
 
-					<p style={{ color: "var(--text-secondary)", marginBottom: "24px" }}>
+					<p className={styles.description}>
 						{isNewUser
 							? "Desbloqueá todas las funciones premium y empezá a crear sin límites."
 							: "Volvé a tener acceso completo a todas las herramientas."}
@@ -320,13 +225,7 @@ export default function SuscribirPage() {
 					{EmailInput}
 
 					<button
-						className="btn btn-primary"
-						style={{
-							width: "100%",
-							padding: "14px",
-							fontSize: "16px",
-							borderRadius: "10px",
-						}}
+						className={`btn btn-primary ${styles.subscribeButton}`}
 						onClick={handleSubscribe}
 						disabled={loading}
 					>

@@ -90,3 +90,26 @@ export async function deleteProjectAction(projectId: string) {
     revalidatePath('/dashboard');
     return { success: true };
 }
+
+// 4. Verificar estado de suscripción
+export async function checkSubscriptionStatus() {
+    const { userId } = await auth();
+    if (!userId) throw new Error('No autorizado');
+
+    const profile = await prisma.profile.findUnique({
+        where: { clerkUserId: userId },
+        select: { id: true },
+    });
+
+    if (!profile) {
+        return { isSubscribed: false };
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+        where: { userId: profile.id }
+    });
+
+    const isSubscribed = subscription && subscription.status === 'authorized';
+
+    return { isSubscribed };
+}
